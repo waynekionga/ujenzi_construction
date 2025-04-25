@@ -1,14 +1,20 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import pymysql
+import sqlite3
+import datetime
+import base64
+import requests
+from requests.auth import HTTPBasicAuth
 
 app = Flask(__name__)
 CORS(app)
 
 # Database connection function
 def get_db_connection():
-    return pymysql.connect(
-        host="localhost",           # Change to your real host when you deploy
+    conn = sqlite3.connect("ujenzi.db")
+    conn.row_factory = sqlite3.Row
+    return conn(
+        host="https://ujenzi-construction.onrender.com",           # Change to your real host when you deploy
         user="root",                # Your MySQL username
         password="14550",                # Your MySQL password
         database="ujenzi_db",       # Your test DB name

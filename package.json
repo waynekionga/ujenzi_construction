@@ -1,0 +1,20 @@
+{
+  "name": "ujenzi_construction",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/waynekionga/ujenzi_construction.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/waynekionga/ujenzi_construction/issues"
+  },
+  "homepage": "https://github.com/waynekionga/ujenzi_construction#readme"
+}
