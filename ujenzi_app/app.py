@@ -11,12 +11,12 @@ CORS(app)
 
 # Database connection function
 def get_db_connection():
-    
+    # Use "localhost" for local development, or your Render database host when deployed
     return pymysql.connect(
-        host="https://ujenzi-construction.onrender.com",           # Change to your real host when you deploy
+        host="localhost",           # Change to "localhost" for local development
         user="root",                # Your MySQL username
-        password="14550",                # Your MySQL password
-        database="ujenzi_db",       # Your test DB name
+        password="14550",           # Your MySQL password
+        database="ujenzi_db",       # Your database name
         cursorclass=pymysql.cursors.DictCursor
     )
 
@@ -41,7 +41,6 @@ def signup():
 
     return jsonify({"message": "Signup successful!"})
 
-
 # -------- LOGIN --------
 @app.route("/api/login", methods=["POST"])
 def login():
@@ -52,7 +51,7 @@ def login():
 
     conn = get_db_connection()
     cursor = conn.cursor()
-    sql = "SELECT suid, username, email, phone FROM users WHERE username=%s AND email=%s AND password=%s"
+    sql = "SELECT username, email, phone FROM users WHERE username=%s AND email=%s AND password=%s"
     cursor.execute(sql, (username, email, password))
 
     if cursor.rowcount == 0:
@@ -83,8 +82,6 @@ def add_worker():
 
     return jsonify({"message": "Worker added successfully!"})
 
-
-
 # -------- ADD PROJECT --------
 @app.route("/api/projects", methods=["POST"])
 def add_project():
@@ -104,7 +101,6 @@ def add_project():
     conn.close()
 
     return jsonify({"message": "Project added successfully!"})
-
 
 # -------- M-PESA PAYMENT --------
 @app.route('/api/mpesa_payment', methods=['POST'])
@@ -166,4 +162,3 @@ def mpesa_payment():
 # Run the app locally
 if __name__ == '__main__':
     app.run(debug=True)
-    
