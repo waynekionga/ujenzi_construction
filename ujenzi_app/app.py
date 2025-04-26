@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import sqlite3
+import pymysql
 import datetime
 import base64
 import requests
@@ -11,9 +11,8 @@ CORS(app)
 
 # Database connection function
 def get_db_connection():
-    conn = sqlite3.connect("ujenzi.db")
-    conn.row_factory = sqlite3.Row
-    return conn(
+    
+    return pymysql.connect(
         host="https://ujenzi-construction.onrender.com",           # Change to your real host when you deploy
         user="root",                # Your MySQL username
         password="14550",                # Your MySQL password
