@@ -2,9 +2,11 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import pymysql
 import datetime
+import pymysql.cursors  # Ensure this is imported
 import base64
 import requests
 from requests.auth import HTTPBasicAuth
+import os 
 
 app = Flask(__name__)
 CORS(app)
@@ -21,86 +23,131 @@ def get_db_connection():
     )
 
 # -------- SIGNUP --------
-@app.route("/api/signup", methods=["POST"])
+@app.route('/api/signup', methods=['POST'])
 def signup():
-    data = request.form
-    username = data.get("username")
-    email = data.get("email")
-    password = data.get("password")
-    phone = data.get("phone")
+    data = request.get_json()
 
-    if not username or not email or not password or not phone:
-        return jsonify({"error": "Missing fields"}), 400
+    username = data['username']
+    email = data['email']
+    password = data['password']
+    phone = data['phone']
 
     conn = get_db_connection()
     cursor = conn.cursor()
+
+    # Check if email already exists
+    cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
+    existing_user = cursor.fetchone()
+
+    if existing_user:
+        cursor.close()
+        conn.close()
+        return jsonify({'error': 'Email already registered'}), 409
+
+    # Insert new user
     sql = "INSERT INTO users (username, email, password, phone) VALUES (%s, %s, %s, %s)"
     cursor.execute(sql, (username, email, password, phone))
     conn.commit()
+
+    cursor.close()
     conn.close()
 
-    return jsonify({"message": "Signup successful!"})
+    return jsonify({'message': 'User registered successfully'}), 201
+
 
 # -------- LOGIN --------
 @app.route("/api/login", methods=["POST"])
 def login():
-    data = request.form
-    username = data.get("username")
+    data = request.get_json()  # ← this was request.form before
+
     email = data.get("email")
     password = data.get("password")
 
     conn = get_db_connection()
-    cursor = conn.cursor()
-    sql = "SELECT username, email, phone FROM users WHERE username=%s AND email=%s AND password=%s"
-    cursor.execute(sql, (username, email, password))
-
-    if cursor.rowcount == 0:
-        conn.close()
-        return jsonify({"message": "Login failed. Invalid credentials"}), 401
+    cursor = conn.cursor(pymysql.cursors.DictCursor)  # to get dictionary output
+    sql = "SELECT username, email, phone FROM users WHERE email=%s AND password=%s"
+    cursor.execute(sql, (email, password))
 
     user = cursor.fetchone()
     conn.close()
-    return jsonify({"message": "Login successful", "user": user})
 
-# -------- ADD WORKER --------
-@app.route("/api/workers", methods=["POST"])
-def add_worker():
-    data = request.form
-    name = data.get("name")
-    role = data.get("role")
-    phone = data.get("phone")
+    if not user:
+        return jsonify({"message": "Login failed. Invalid credentials"}), 401
 
-    if not name or not role or not phone:
-        return jsonify({"error": "Missing fields"}), 400
+    # You can optionally generate a token here and return it
+    return jsonify({"message": "Login successful", "user": user}), 200
 
+# -------- ADD + FETCH WORKERS --------
+@app.route("/api/workers", methods=["GET", "POST"])
+def workers():
+    if request.method == "POST":
+        data = request.get_json()
+        name = data.get("name")
+        role = data.get("role")
+        phone = data.get("phone")
+        worker_photo_path = data.get("worker_photo")
+        worker_photo = os.path.basename(worker_photo_path)
+
+
+        if not name or not role or not phone or not worker_photo:
+            return jsonify({"error": "Missing fields"}), 400
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO workers (name, role, phone, worker_photo) VALUES (%s, %s, %s, %s)",
+            (name, role, phone, worker_photo)
+        )
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return jsonify({"message": "Worker added successfully"}), 201
+
+    elif request.method == "GET":
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT name, role, phone, worker_photo FROM workers")
+        workers = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return jsonify(workers)
+
+# -------- GET PROJECTS --------
+@app.route("/api/projects", methods=["GET"])
+def get_projects():
     conn = get_db_connection()
-    cursor = conn.cursor()
-    sql = "INSERT INTO workers (name, role, phone) VALUES (%s, %s, %s)"
-    cursor.execute(sql, (name, role, phone))
-    conn.commit()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)  # ✅ This works with pymysql
+    cursor.execute("SELECT * FROM projects")
+    projects = cursor.fetchall()
+    cursor.close()
     conn.close()
+    return jsonify(projects), 200
 
-    return jsonify({"message": "Worker added successfully!"})
 
 # -------- ADD PROJECT --------
 @app.route("/api/projects", methods=["POST"])
 def add_project():
-    data = request.form
-    project_name = data.get("project_name")
-    blueprint_url = data.get("blueprint_url")
+    data = request.get_json()
+    name = data.get("name")
+    description = data.get("description")
+    blueprint = data.get("blueprint")
     status = data.get("status")
 
-    if not project_name or not blueprint_url or not status:
+    if not name or not description or not blueprint or not status:
         return jsonify({"error": "Missing fields"}), 400
 
     conn = get_db_connection()
     cursor = conn.cursor()
-    sql = "INSERT INTO projects (project_name, blueprint_url, status) VALUES (%s, %s, %s)"
-    cursor.execute(sql, (project_name, blueprint_url, status))
+    cursor.execute(
+        "INSERT INTO projects (name, description, blueprint, status) VALUES (%s, %s, %s, %s)",
+        (name, description, blueprint, status)
+    )
     conn.commit()
+    cursor.close()
     conn.close()
 
-    return jsonify({"message": "Project added successfully!"})
+    return jsonify({"message": "Project added successfully"}), 201
 
 # -------- M-PESA PAYMENT --------
 @app.route('/api/mpesa_payment', methods=['POST'])

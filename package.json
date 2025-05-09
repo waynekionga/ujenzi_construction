@@ -16,5 +16,9 @@
   "bugs": {
     "url": "https://github.com/waynekionga/ujenzi_construction/issues"
   },
-  "homepage": "https://github.com/waynekionga/ujenzi_construction#readme"
+  "homepage": "https://github.com/waynekionga/ujenzi_construction#readme",
+  "dependencies": {
+    "axios": "^1.9.0",
+    "bootstrap": "^5.3.6"
+  }
 }
