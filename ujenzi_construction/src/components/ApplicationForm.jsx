@@ -37,7 +37,7 @@ function ApplicationForm() {
       setSubmitting(true);
       console.log("Initiating payment with:", { amount: total, phone });
 
-      const response = await axios.post("http://127.0.0.1:5000/api/mpesa_paymentcd ", {
+      const response = await axios.post("http://127.0.0.1:5000/api/mpesa_payment", {
         amount: total,
         phone: phone,
       });
